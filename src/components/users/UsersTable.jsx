@@ -181,7 +181,7 @@ export default function UsersTable() {
                 <td className="px-4 py-3">
                   <button
                     onClick={() => navigate(`/dashboard/admin/limits/${encodeURIComponent(r.userId)}`)}
-                    className="px-3 py-1.5 rounded-md text-white bg-teal-600 hover:bg-teal-700 active:scale-95 transition shadow"
+                    className="px-3 py-1.5 rounded-md text-white bg-teal-600 hover:bg-teal-700 shadow-[0_0_10px_rgba(20,184,166,0.5)] hover:shadow-[0_0_15px_rgba(20,184,166,0.8)] active:scale-95 transition px-3 py-1.5 rounded-md text-white bg-teal-600 hover:bg-teal-700 active:scale-95 transition shadow"
                   >
                     Show Limit
                   </button>

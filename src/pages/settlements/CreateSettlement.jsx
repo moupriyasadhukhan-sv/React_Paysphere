@@ -336,7 +336,8 @@ export default function CreateSettlement() {
                 hover:bg-teal-500/50
                 hover:shadow-[0_0_18px_#2dd4bf]
                 transition-all
-            ">
+            "
+            onClick={handleCreate}>
           Create Settlement
         </button>
 

@@ -12,6 +12,7 @@ export default function MerchantsTable() {
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [balances, setBalances] = useState({});
 
   const LoaderIcon = useIcon("Loader");
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -51,6 +52,44 @@ export default function MerchantsTable() {
 
     return () => { mounted = false; };
   }, []);
+
+
+  useEffect(() => {
+  if (!data.length) return;
+
+  data.forEach((m) => {
+    const merchantId = getMerchantId(m);
+    if (!merchantId) return;
+
+    // ✅ avoid refetch
+    if (balances[merchantId]) return;
+
+    // set loading
+    setBalances(prev => ({
+      ...prev,
+      [merchantId]: { loading: true }
+    }));
+
+    api
+      .get(`/api/Wallets/merchant/${merchantId}/verify`)
+      .then(res => {
+        setBalances(prev => ({
+          ...prev,
+          [merchantId]: {
+            loading: false,
+            balance: res.data.balance,
+            currency: res.data.currency || "INR"
+          }
+        }));
+      })
+      .catch(() => {
+        setBalances(prev => ({
+          ...prev,
+          [merchantId]: { loading: false, error: true }
+        }));
+      });
+  });
+}, [data, getMerchantId]);
 
   // Pagination
   const total = data.length;
@@ -107,7 +146,7 @@ export default function MerchantsTable() {
 };
 
   // 👇 columns: removed Create Settlement (so -1)
-  const HEAD_COLS = 7;
+  const HEAD_COLS = 8;
 
   return (
   <div className="space-y-3">
@@ -133,6 +172,7 @@ export default function MerchantsTable() {
             <th className="px-4 py-3">Name</th>
             <th className="px-4 py-3">Email</th>
             <th className="px-4 py-3">Status</th>
+            <th className="px-4 py-3">Balance</th>
             <th className="px-4 py-3">Check Settlement</th>
             <th className="px-4 py-3">Create Settlement</th>
             <th className="px-4 py-3">Delete Merchant</th>
@@ -206,6 +246,24 @@ export default function MerchantsTable() {
                       {m.status ?? "—"}
                     </span>
                   </td>
+                  
+                  <td className="px-4 py-3">
+                    {balances[id]?.loading && (
+                      <span className="text-slate-400 animate-pulse">Loading…</span>
+                    )}
+
+                    {!balances[id]?.loading && balances[id]?.error && (
+                      <span className="text-rose-400">—</span>
+                    )}
+
+                    {!balances[id]?.loading && balances[id]?.balance !== undefined && (
+                      <span className="font-semibold text-emerald-400">
+                        ₹{balances[id].balance.toLocaleString()}
+                      </span>
+                    )}
+                  </td>
+
+
 
                   {/* Check Settlement */}
                   <td className="px-4 py-3">

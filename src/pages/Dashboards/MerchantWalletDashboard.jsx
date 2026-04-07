@@ -65,16 +65,14 @@ export default function MerchantWalletDashboard() {
         <Zap size={48} className="opacity-30" />
       </div>
  
-      {wallet.status === "Active" && (
-        <button
-          onClick={closeWallet}
-          className="mt-8 bg-red-500 hover:bg-red-600 text-white px-6 py-3 rounded-xl"
-        >
-          Close Wallet
-        </button>
-      )}
+      {/* {wallet.status === "Active" && (
+        // <button
+        //   onClick={closeWallet}
+        //   className="mt-8 bg-red-500 hover:bg-red-600 text-white px-6 py-3 rounded-xl"
+        // >
+        //   Close Wallet
+        // </button>
+      )} */}
     </div>
   );
 }
- 
- 

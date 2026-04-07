@@ -344,16 +344,16 @@ return (
 >
 
    <div
-  className="
-    w-full max-w-lg
-    bg-gradient-to-br from-teal-500/15 to-cyan-500/5
-    backdrop-blur-xl
-    border border-teal-400/25
-    rounded-2xl
-    p-6
-    shadow-[0_0_40px_rgba(45,212,191,0.25)]
-  "
->
+    className="
+      w-full max-w-lg
+      bg-gradient-to-br from-teal-500/15 to-cyan-500/5
+      backdrop-blur-xl
+      border border-teal-400/25
+      rounded-2xl
+      p-6
+      shadow-[0_0_40px_rgba(45,212,191,0.25)]
+    "
+    >
 
 
       {/* Header */}
