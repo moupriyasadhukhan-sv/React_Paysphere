@@ -1,13 +1,7 @@
 // src/components/transactions/HistoryTable.jsx
-import React, { useMemo } from "react";
-import { ChevronRight, ChevronLeft, Eye, Zap } from "lucide-react";
-import { useSelector } from "react-redux";
-import usePrimaryWalletId from "../../hooks/usePrimaryWalletId";
-
-const getTransactionIcon = (fromWallet, toWallet, currentWallet, txType = "") => {
-  // Simple neutral icon for all transactions
-  return <Zap size={16} className="text-blue-400" />;
-};
+import React from "react";
+import { ChevronRight, ChevronLeft, Eye } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const getStatusColor = (status) => {
   if (!status) return "bg-slate-500/10 text-slate-300";
@@ -20,51 +14,35 @@ const getStatusColor = (status) => {
 };
 
 export default function HistoryTable({ data, page, onPrev, onNext, onView }) {
-  const userId = useSelector((s) => s.auth?.userId);
-  const role = useSelector((s) => s.auth?.role);
-  const merchantId = useSelector((s) => s.auth?.merchantId);
+  const navigate = useNavigate();
 
-  // Get the primary wallet ID for the current user/merchant
-  const { walletId: currentWalletId } = usePrimaryWalletId({
-    role,
-    userId,
-    merchantId,
-  });
+  const handleRetry = (transaction) => {
+    const type = String(transaction.TransactionType ?? transaction.transactionType ?? "").toUpperCase();
+    const toWallet = transaction.ToWalletID ?? transaction.toWalletID ?? transaction.toWalletId;
+    const amount = transaction.Amount ?? transaction.amount;
+    const phone = transaction.PhoneNumber ?? transaction.phoneNumber ?? "";
+    
+    // Store transaction data in session storage for form to pre-fill
+    sessionStorage.setItem("retryTransaction", JSON.stringify({
+      toWallet,
+      amount,
+      phone,
+      originalTransactionId: transaction.TransactionID ?? transaction.transactionID ?? transaction.transactionId
+    }));
 
-  // Use actual wallet ID from hook, or fall back to frequency detection
-  const effectiveWalletId = React.useMemo(() => {
-    if (currentWalletId) {
-      return currentWalletId;
+    // Determine form type
+    let formTab = "p2p"; // default
+    if (type === "P2P") {
+      formTab = "p2p";
+    } else if (type === "P2M") {
+      formTab = "p2m";
+    } else if (type === "REFUND") {
+      formTab = "refund";
     }
-
-    // Frequency-based fallback only while waiting for hook
-    if (!data?.items?.length) {
-      return null;
-    }
-
-    const walletsInData = new Set();
-    data.items.forEach((t) => {
-      const from = String(t.FromWalletID ?? t.fromWalletID ?? t.fromWalletId ?? "").trim();
-      const to = String(t.ToWalletID ?? t.toWalletID ?? t.toWalletId ?? "").trim();
-      if (from) walletsInData.add(from);
-      if (to) walletsInData.add(to);
-    });
-
-    let maxFromCount = 0;
-    let detectedWallet = null;
-    for (const wallet of walletsInData) {
-      let fromCount = 0;
-      data.items.forEach((t) => {
-        const from = String(t.FromWalletID ?? t.fromWalletID ?? t.fromWalletId ?? "").trim();
-        if (from === wallet) fromCount++;
-      });
-      if (fromCount > maxFromCount) {
-        maxFromCount = fromCount;
-        detectedWallet = wallet;
-      }
-    }
-    return detectedWallet;
-  }, [currentWalletId, data]);
+    
+    // Navigate to specific form page with form type in URL
+    navigate(`/dashboard/user/${formTab}`);
+  };
 
   const totalPages = Math.max(1, Math.ceil(data.total / data.pageSize));
 
@@ -144,14 +122,9 @@ export default function HistoryTable({ data, page, onPrev, onNext, onView }) {
                       #{id}
                     </td>
                     <td className="px-6 py-4 text-sm">
-                      <div className="flex items-center gap-2">
-                        <div className="p-2 bg-slate-700/50 rounded-lg">
-                          {getTransactionIcon(from, to, effectiveWalletId, type)}
-                        </div>
-                        <span className="text-slate-300 font-medium capitalize">
-                          {String(type).toLowerCase()}
-                        </span>
-                      </div>
+                      <span className="text-slate-300 font-medium capitalize">
+                        {String(type).toLowerCase()}
+                      </span>
                     </td>
                     <td className="px-6 py-4 text-sm">
                       <span
@@ -182,14 +155,26 @@ export default function HistoryTable({ data, page, onPrev, onNext, onView }) {
                       <span className="text-xs">{date}</span>
                     </td>
                     <td className="px-6 py-4 text-sm text-center">
-                      <button
-                        type="button"
-                        onClick={() => onView?.(id)}
-                        className="inline-flex items-center gap-1 text-teal-400 hover:text-teal-300 font-semibold transition-all group/btn opacity-0 group-hover:opacity-100 hover:bg-teal-500/10 px-3 py-1.5 rounded-lg border border-teal-500/20 hover:border-teal-500/40"
-                      >
-                        View
-                        <ChevronRight size={14} className="group-hover/btn:translate-x-1 transition-transform" />
-                      </button>
+                      <div className="flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-all">
+                        <button
+                          type="button"
+                          onClick={() => onView?.(id)}
+                          className="inline-flex items-center gap-1 text-teal-400 hover:text-teal-300 font-semibold transition-all group/btn hover:bg-teal-500/10 px-3 py-1.5 rounded-lg border border-teal-500/20 hover:border-teal-500/40 text-xs"
+                        >
+                          View
+                          <ChevronRight size={14} className="group-hover/btn:translate-x-1 transition-transform" />
+                        </button>
+                        {status && String(status).toLowerCase().includes("failed") && (
+                          <button
+                            type="button"
+                            onClick={() => handleRetry(t)}
+                            className="inline-flex items-center gap-1 text-orange-400 hover:text-orange-300 font-semibold transition-all group/btn hover:bg-orange-500/10 px-3 py-1.5 rounded-lg border border-orange-500/20 hover:border-orange-500/40 text-xs"
+                          >
+                            Retry
+                            <ChevronRight size={14} className="group-hover/btn:translate-x-1 transition-transform" />
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 );

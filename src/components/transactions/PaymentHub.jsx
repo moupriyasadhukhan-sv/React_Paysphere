@@ -1,5 +1,5 @@
 import { useSelector } from "react-redux";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import P2PForm from "./forms/P2PForm.jsx";
 import P2MForm from "./forms/P2MForm.jsx";
 import RefundForm from "./forms/RefundForm.jsx";
@@ -56,6 +56,15 @@ export default function PaymentHub({ onCompleted }) {
   const role = useSelector((s) => s.auth?.role);
   const [selectedType, setSelectedType] = useState(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
+
+  // Check if retry form should be auto-selected
+  useEffect(() => {
+    const activePaymentTab = sessionStorage.getItem("activePaymentTab");
+    if (activePaymentTab) {
+      setSelectedType(activePaymentTab);
+      sessionStorage.removeItem("activePaymentTab");
+    }
+  }, []);
 
   const paymentOptions = [
     {

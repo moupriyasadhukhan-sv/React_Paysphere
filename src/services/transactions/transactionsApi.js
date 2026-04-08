@@ -135,3 +135,35 @@ export function createRefund({
   return api.post("/Transactions/refunds", body).then((r) => r.data);
 }
  
+export function storeFailedTransaction({
+  toWalletID,
+  amount,
+  currency = "INR",
+  phoneNumber,
+  transactionType = "P2P",
+  errorMessage,
+  errorCode
+}) {
+  const body = {
+    toWalletID: Number(toWalletID),
+    amount: Number(amount),
+    currency,
+    phoneNumber: String(phoneNumber || "").trim(),
+    transactionType: String(transactionType).toUpperCase(),
+    transactionDate: new Date().toISOString(),
+    status: "Failed",
+    errorMessage: errorMessage || "Invalid transaction",
+    errorCode: errorCode || "VALIDATION_ERROR"
+  };
+  
+  try {
+    return api.post("/Transactions/failed", body).then((r) => {
+      console.log("[transactionsApi] Failed transaction stored with ID:", r.data?.TransactionID || r.data?.transactionID);
+      return r.data;
+    });
+  } catch (err) {
+    console.error("[transactionsApi] Error storing failed transaction:", err);
+    throw err;
+  }
+}
+ 

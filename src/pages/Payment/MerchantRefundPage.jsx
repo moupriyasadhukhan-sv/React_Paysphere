@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
+import { useDispatch } from "react-redux";
 import {
   listMerchantRefundRequests,
   approveRefundRequest,
   rejectRefundRequest,
 } from "../../services/refunds/refundRequestsApi";
 import { createRefund } from "../../services/transactions/transactionsApi";
+import { addNotification } from "../../stores/notificationsSlice";
 
 function StatusBadge({ status }) {
   const s = (status || "").toLowerCase();
@@ -22,6 +24,7 @@ function StatusBadge({ status }) {
 }
 
 export default function MerchantRefundsPage() {
+  const dispatch = useDispatch();
   const [rows, setRows]     = useState([]);
   const [busyId, setBusyId] = useState(null);
   const [err, setErr]       = useState("");
@@ -33,7 +36,7 @@ export default function MerchantRefundsPage() {
     setLoading(true);
     try {
       const data = await listMerchantRefundRequests();
-      setRows(data.map((x) => ({
+      const newRows = data.map((x) => ({
         id:                    x.id,
         originalTransactionID: x.OriginalTransactionID ?? x.originalTransactionID,
         amount:                x.Amount ?? x.amount,
@@ -41,7 +44,23 @@ export default function MerchantRefundsPage() {
         phone:                 x.Phone ?? x.phone,
         requestedAtUtc:        x.RequestedAtUtc ?? x.requestedAtUtc,
         status:                x.Status ?? x.status,
-      })));
+      }));
+
+      // Check for new pending refund requests and notify merchant
+      const pendingRequests = newRows.filter((r) => (r.status || "").toLowerCase() === "pending");
+      if (pendingRequests.length > 0) {
+        // Notify merchant of new refund requests
+        pendingRequests.forEach((req) => {
+          dispatch(addNotification({
+            title: "New Refund Request 📋",
+            message: `User has requested a refund for transaction #${req.originalTransactionID} (Amount: ₹${req.amount})`,
+            icon: "🔔",
+            timestamp: new Date().toISOString()
+          }));
+        });
+      }
+
+      setRows(newRows);
     } catch (e) {
       const d = e?.response?.data;
       setErr(d?.detail || d?.title || d?.message || e?.message || "Failed to load refund requests");
@@ -58,6 +77,14 @@ export default function MerchantRefundsPage() {
     try {
       await approveRefundRequest(id);
       setMsg("Request approved.");
+      
+      dispatch(addNotification({
+        title: "Refund Request Approved ✓",
+        message: `Refund request #${id} has been approved`,
+        icon: "👏",
+        timestamp: new Date().toISOString()
+      }));
+      
       await refresh();
     } catch (e) {
       const d = e?.response?.data;
@@ -71,6 +98,14 @@ export default function MerchantRefundsPage() {
     try {
       await rejectRefundRequest(id);
       setMsg("Request rejected.");
+      
+      dispatch(addNotification({
+        title: "Refund Request Rejected ❌",
+        message: `Refund request #${id} has been rejected`,
+        icon: "🙅",
+        timestamp: new Date().toISOString()
+      }));
+      
       await refresh();
     } catch (e) {
       const d = e?.response?.data;
@@ -88,6 +123,14 @@ export default function MerchantRefundsPage() {
         requestId: row.id,
       });
       setMsg(res?.message || "Refund executed.");
+      
+      dispatch(addNotification({
+        title: "Refund Executed Successfully 💵",
+        message: `Refund of ₹${row.amount} for request #${row.id} has been executed`,
+        icon: "💵",
+        timestamp: new Date().toISOString()
+      }));
+      
       await refresh();
     } catch (e) {
       const d = e?.response?.data;

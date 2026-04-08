@@ -54,16 +54,18 @@ export default function TransactionReport({ data }) {
     let sentCount = 0;
     let receivedCount = 0;
     
-    // Detect user's wallet from the most frequent sender in transactions (fallback method)
+    // Detect user's wallet from the most frequent sender in COMPLETED transactions (fallback method)
     const walletFrequency = {};
     data.items.forEach((t) => {
+      const status = String(t.Status ?? t.status ?? "").toLowerCase();
       const fromWallet = String(t.FromWalletID ?? t.fromWalletID ?? t.fromWalletId ?? "").trim();
-      if (fromWallet) {
+      // Only count completed transactions for frequency detection
+      if (fromWallet && status.includes("completed")) {
         walletFrequency[fromWallet] = (walletFrequency[fromWallet] || 0) + 1;
       }
     });
     
-    // Find the wallet that appears most frequently as sender
+    // Find the wallet that appears most frequently as sender in completed transactions
     let detectedWallet = currentWalletId;
     if (!detectedWallet && Object.keys(walletFrequency).length > 0) {
       detectedWallet = Object.keys(walletFrequency).reduce((a, b) => 
@@ -76,12 +78,21 @@ export default function TransactionReport({ data }) {
     console.log("[TransactionReport] Wallet Frequency:", walletFrequency);
     console.log("[TransactionReport] Data Items:", data.items);
     
+    // Only process COMPLETED transactions for sent/received calculations
     data.items.forEach((t) => {
+      const status = String(t.Status ?? t.status ?? "").toLowerCase();
+      
+      // Skip if not completed
+      if (!status.includes("completed")) {
+        console.log(`[TransactionReport] Skipping non-completed transaction: status=${status}`);
+        return;
+      }
+      
       const amount = parseFloat(t.Amount ?? t.amount ?? 0);
       const fromWallet = String(t.FromWalletID ?? t.fromWalletID ?? t.fromWalletId ?? "").trim();
       const toWallet = String(t.ToWalletID ?? t.toWalletID ?? t.toWalletId ?? "").trim();
       
-      console.log(`[TransactionReport] Tx: from=${fromWallet}, to=${toWallet}, detected=${detectedWallet}, amount=${amount}`);
+      console.log(`[TransactionReport] Tx: from=${fromWallet}, to=${toWallet}, status=${status}, detected=${detectedWallet}, amount=${amount}`);
       
       // If detected wallet is the sender, it's a sent transaction
       if (detectedWallet && fromWallet === detectedWallet) {

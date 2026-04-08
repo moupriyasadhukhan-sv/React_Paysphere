@@ -1,9 +1,12 @@
 import { useState } from "react";
+import { useDispatch } from "react-redux";
 import { createRefundRequest } from "../../services/refunds/refundRequestsApi.js";
+import { addNotification } from "../../stores/notificationsSlice";
 
 const digitsOnly = (v) => (v || "").replace(/\D+/g, "");
 
 export default function UserRefundRequestForm({ onCompleted }) {
+  const dispatch = useDispatch();
   const [originalTransactionID, setOrig] = useState("");
   const [phone, setPhone] = useState("");
 
@@ -25,6 +28,15 @@ export default function UserRefundRequestForm({ onCompleted }) {
         phoneNumber: digitsOnly(phone),
       });
       setMsg(out?.message || "Refund request submitted (Pending).");
+      
+      // Add notification
+      dispatch(addNotification({
+        title: "Refund Request Submitted ✓",
+        message: `Refund request for transaction #${originalTransactionID} submitted successfully`,
+        icon: "🔄",
+        timestamp: new Date().toISOString()
+      }));
+      
       onCompleted?.();
       setOrig(""); setPhone("");
     } catch (e2) {
