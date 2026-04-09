@@ -64,7 +64,15 @@ import AppRoutes from './routes/AppRoutes';
 function App() {
   return (
     <>
-      <Toaster position="top-center" />
+      <Toaster 
+        position="top-center" 
+        reverseOrder={false} 
+        gutter={8}
+        toastOptions={{
+          // This ensures all toasts inherit the same style unless overridden
+          duration: 4000,
+        }}
+      />
       <AppRoutes />
     </>
   );

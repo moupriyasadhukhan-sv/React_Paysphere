@@ -1,18 +1,18 @@
 import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import TransitionImage from "../../assets/transition_image.png";
-
+ 
 /**
  * PAGE TRANSITION COMPONENT
  * Shows animated globe with rupee notes floating in background
  */
 export default function PageTransition({ isTransitioning, onComplete }) {
   const [showTransition, setShowTransition] = useState(false);
-
+ 
   useEffect(() => {
     if (isTransitioning) {
       setShowTransition(true);
-      // Keep showing for 0.5 second, then callback
+      // Keep showing for 0.4 second, then callback
       const timer = setTimeout(() => {
         setShowTransition(false);
         onComplete?.();
@@ -20,7 +20,7 @@ export default function PageTransition({ isTransitioning, onComplete }) {
       return () => clearTimeout(timer);
     }
   }, [isTransitioning, onComplete]);
-
+ 
   // Generate random rupee notes positions
   const rupeeNotes = [...Array(15)].map((_, i) => ({
     id: i,
@@ -30,7 +30,7 @@ export default function PageTransition({ isTransitioning, onComplete }) {
     duration: 2.2 + Math.random() * 1.2,
     scale: 0.25 + Math.random() * 0.5,
   }));
-
+ 
   return (
     <AnimatePresence>
       {showTransition && (
@@ -51,14 +51,14 @@ export default function PageTransition({ isTransitioning, onComplete }) {
             <motion.div
               key={note.id}
               className="absolute text-5xl font-bold"
-              initial={{ 
-                x: note.initialX * 60, 
+              initial={{
+                x: note.initialX * 60,
                 y: note.initialY * 60 + 250,
                 opacity: 0,
                 scale: 0
               }}
-              animate={{ 
-                x: note.initialX * 240, 
+              animate={{
+                x: note.initialX * 240,
                 y: note.initialY * 240 - 350,
                 opacity: [0, 0.7, 0],
                 scale: note.scale,
@@ -80,7 +80,7 @@ export default function PageTransition({ isTransitioning, onComplete }) {
               ₹
             </motion.div>
           ))}
-
+ 
           {/* Main Transition Image Container - Center Focus */}
           <motion.div
             initial={{ scale: 0.4, opacity: 0, rotate: -180 }}
@@ -90,6 +90,7 @@ export default function PageTransition({ isTransitioning, onComplete }) {
             className="relative flex items-center justify-center"
           >
             {/* Transition Image - Main Focus with Rotation */}
+            {/* Reduced w-56 to w-28, h-56 to h-28, halved box-shadow values, and halved border width */}
             <motion.div
               animate={{
                 rotate: [0, 360],
@@ -100,41 +101,41 @@ export default function PageTransition({ isTransitioning, onComplete }) {
                 scale: { duration: 1.6, repeat: Infinity, ease: "easeInOut" },
               }}
               style={{
-                boxShadow: "0 0 70px rgb(56, 220, 141), inset 0 0 50px rgb(144, 225, 210), 0 8px 32px rgb(230, 180, 14)",
-                filter: "drop-shadow(0 0 40px rgb(97, 191, 201))",
+                boxShadow: "0 0 35px rgb(56, 220, 141), inset 0 0 25px rgb(144, 225, 210), 0 4px 16px rgb(230, 180, 14)",
+                filter: "drop-shadow(0 0 20px rgb(97, 191, 201))",
               }}
-              className="w-56 h-56 flex items-center justify-center rounded-full bg-[#0B1121] border-2 border-emerald-400/50 overflow-hidden relative z-10"
+              className="w-28 h-28 flex items-center justify-center rounded-full bg-[#0B1121] border border-emerald-400/50 overflow-hidden relative z-10"
             >
-              <img 
-                src={TransitionImage} 
-                alt="PaySphere Transition" 
-                className="w-52 h-52 object-cover rounded-full"
+              <img
+                src={TransitionImage}
+                alt="PaySphere Transition"
+                className="w-[6.5rem] h-[6.5rem] object-cover rounded-full"
                 style={{
-                  filter: "drop-shadow(0 0 25px rgba(71, 237, 182, 0.7))",
+                  filter: "drop-shadow(0 0 12.5px rgba(71, 237, 182, 0.7))",
                 }}
               />
             </motion.div>
-
+ 
             {/* Primary Glow Aura */}
+            {/* Halved width and height from 240px to 120px, and halved shadow spread */}
             <motion.div
               className="absolute inset-0 rounded-full z-0"
               animate={{
                 boxShadow: [
-                  "0 0 50px rgba(113, 240, 225, 0.7)",
-                  "0 0 100px rgba(79, 139, 67, 0.4)",
-                  "0 0 50px rgba(46, 209, 155, 0.7)",
+                  "0 0 25px rgba(113, 240, 225, 0.7)",
+                  "0 0 50px rgba(79, 139, 67, 0.4)",
+                  "0 0 25px rgba(46, 209, 155, 0.7)",
                 ],
               }}
               transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
               style={{
-                width: "240px",
-                height: "240px",
+                width: "120px",
+                height: "120px",
               }}
             />
           </motion.div>
-
+ 
           {/* Loading Text */}
-          {/* FIX: Changed bottom-36 to bottom-16 to move it significantly lower */}
           <motion.div
             className="absolute bottom-16 text-center"
             initial={{ opacity: 0, y: 15 }}
@@ -173,3 +174,4 @@ export default function PageTransition({ isTransitioning, onComplete }) {
     </AnimatePresence>
   );
 }
+ 

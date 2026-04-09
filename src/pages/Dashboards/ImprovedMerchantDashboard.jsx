@@ -242,7 +242,7 @@ function ImprovedMerchantDashboard({ merchantId, userName }) {
 
   return (
     <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white min-h-screen p-3 md:p-4 lg:p-6">
-      <Toaster position="top-right" toastOptions={{ style: { background: "transparent", boxShadow: "none", padding: 0 } }} />
+      {/* <Toaster position="top-right" toastOptions={{ style: { background: "transparent", boxShadow: "none", padding: 0 } }} /> */}
 
       <div className="max-w-7xl mx-auto space-y-4">
 

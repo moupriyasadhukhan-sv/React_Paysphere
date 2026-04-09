@@ -195,7 +195,7 @@ export default function MerchantTransactionsPage({ merchantId: propMerchantId } 
 
   return (
     <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white min-h-screen p-6 md:p-8">
-      <Toaster position="top-right" toastOptions={{ style: { background: "transparent", boxShadow: "none", padding: 0 } }} />
+      {/* <Toaster position="top-right" toastOptions={{ style: { background: "transparent", boxShadow: "none", padding: 0 } }} /> */}
 
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-7xl mx-auto space-y-8">
         {/* Loading State */}

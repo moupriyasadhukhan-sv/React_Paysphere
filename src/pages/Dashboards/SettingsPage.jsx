@@ -21,7 +21,11 @@ export default function SettingsPage({ onNavigate }) {
 
   const rawName  = reduxName  || localStorage.getItem('ps_name')  || '';
   const rawEmail = reduxEmail || localStorage.getItem('ps_email') || '';
-  const userId   = reduxId    || localStorage.getItem('ps_userId') || '';
+  // const userId   = reduxId    || localStorage.getItem('ps_userId') || '';
+  const userId = reduxId 
+  || localStorage.getItem('ps_userId') 
+  || localStorage.getItem('ps_merchantId') 
+  || '';
   const role     = reduxRole  || localStorage.getItem('ps_role')   || 'User';
 
   const displayName = rawName

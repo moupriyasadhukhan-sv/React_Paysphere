@@ -573,6 +573,8 @@ export default function Login() {
         } catch (e) {
           console.warn("JWT decode error:", e);
         }
+
+        
       }
       
       // Extract userId from response (try multiple field names), fallback to JWT
@@ -602,12 +604,43 @@ export default function Login() {
         email: res.data.email || data.email,
       });
 
+     // Inside your login handleSubmit
+toast.success(`Welcome back, ${res.data.name || 'User'}!`, {
+      id: 'login-success-toast', // ⭐ This ID prevents duplicates
+      duration: 4000,
+      icon: '🚀',
+      style: {
+        background: '#0f172a',
+        color: '#fff',
+        border: '1px solid rgba(99, 102, 241, 0.2)',
+        padding: '16px',
+        borderRadius: '12px',
+      },
+    });
+
       // 6. Navigate
       const path = ROLE_TO_PATH[backendRole] || "/dashboard/user";
       navigate(path, { replace: true });
 
+    // } catch (err) {
+    //   setApiError(err?.response?.data?.message || "Invalid credentials. Please try again.");
+    // } finally {
+    //   setSubmitting(false);
+    // }
     } catch (err) {
-      setApiError(err?.response?.data?.message || "Invalid credentials. Please try again.");
+      // A more professional, secure message that doesn't reveal if the email or password specifically was wrong
+      const professionalMsg = "The email or password you entered is incorrect. Please try again.";
+      
+      setApiError(err?.response?.data?.message || professionalMsg);
+      
+      // Optional: Also show a toast for better visibility
+      toast.error(professionalMsg, {
+        style: {
+          background: '#1e293b',
+          color: '#fff',
+          border: '1px solid rgba(239, 68, 68, 0.2)',
+        },
+      });
     } finally {
       setSubmitting(false);
     }
