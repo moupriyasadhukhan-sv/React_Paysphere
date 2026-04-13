@@ -605,7 +605,7 @@ export default function Login() {
       });
 
      // Inside your login handleSubmit
-toast.success(`Welcome back, ${res.data.name || 'User'}!`, {
+      toast.success(`Welcome back, ${res.data.name || 'User'}!`, {
       id: 'login-success-toast', // ⭐ This ID prevents duplicates
       duration: 4000,
       icon: '🚀',

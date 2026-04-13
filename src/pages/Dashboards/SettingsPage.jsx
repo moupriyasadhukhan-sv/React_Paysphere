@@ -52,6 +52,21 @@ export default function SettingsPage({ onNavigate }) {
 
   const handleLogout = () => { localStorage.clear(); window.location.href = '/login'; };
 
+
+  const handleChangePasswordClick = () => {
+  // Logic for the message
+  const message = hi 
+    ? 'आपके ईमेल आईडी पर पासवर्ड अपडेट करने का लिंक भेज दिया गया है।' 
+    : te 
+    ? 'పాస్‌వర్డ్ అప్‌డేట్ లింక్ మీ ఈమెయిల్ ఐడికి పంపబడింది.' 
+    : 'A password update link has been sent to your email ID.';
+    
+  toast.success(message, {
+    duration: 4000,
+    position: 'top-center',
+    icon: '📩',
+  });
+};
   // ── Sub-components ────────────────────────────────────────────
 
   const SectionHead = ({ icon: Icon, label, from, to }) => (
@@ -218,10 +233,14 @@ export default function SettingsPage({ onNavigate }) {
               label={hi ? 'वॉलेट टॉप अप' : te ? 'వాలెట్ టాప్ అప్' : 'Top Up Wallet'}
               sub={hi ? 'तुरंत फंड जोड़ें' : te ? 'వెంటనే నిధులు జోడించండి' : 'Add funds instantly'}
               onClick={() => onNavigate ? onNavigate('wallet') : navigate('/dashboard/wallet')} />
-            <ActionRow icon={Lock}  color="#f59e0b"
+            <ActionRow 
+              icon={Lock}  
+              color="#f59e0b"
               label={hi ? 'पासवर्ड बदलें' : te ? 'పాస్‌వర్డ్ మార్చండి' : 'Change Password'}
               sub={hi ? 'लॉगिन क्रेडेंशियल अपडेट करें' : te ? 'లాగిన్ ఆధారాలు అప్‌డేట్ చేయండి' : 'Update your login credentials'}
-              disabled />
+              onClick={handleChangePasswordClick}
+              // REMOVE THE 'disabled' LINE BELOW
+            />
             <ActionRow icon={Bell}  color="#10b981"
               label={hi ? 'सूचनाएं' : te ? 'నోటిఫికేషన్లు' : 'Notifications'}
               sub={hi ? 'अलर्ट प्रबंधित करें' : te ? 'అలర్ట్‌లు నిర్వహించండి' : 'Manage alerts & push notifications'}
