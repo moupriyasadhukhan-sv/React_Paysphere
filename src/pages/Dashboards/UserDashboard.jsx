@@ -127,6 +127,7 @@
 // }
  
 import React, { useState } from "react";
+import useLogout from "../../hooks/useLogout";
 import { useSelector } from "react-redux";
 import DashboardShell from "../../components/dashboard/DashboardShell";
 import UserHomePage from "../../components/dashboard/UserHomePage";
@@ -161,10 +162,11 @@ function UserDashboardInner() {
     { key: "logout",       label: t.logout,        icon: "🚪" },
   ];
  
-  const handleLogout = () => {
-    localStorage.clear();
-    window.location.href = "/login";
-  };
+  // const handleLogout = () => {
+  //   localStorage.clear();
+  //   window.location.href = "/login";
+  // };
+  const handleLogout = useLogout("/login");
  
   return (
     <DashboardShell
