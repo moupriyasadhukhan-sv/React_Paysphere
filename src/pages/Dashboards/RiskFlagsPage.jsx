@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import { AlertCircle, RefreshCw, Trash2, Edit2, X, Shield } from "lucide-react";
+import { AlertCircle, RefreshCw, Trash2, Edit2, X, Shield, Info } from "lucide-react";
 import { getAllRiskFlags, updateRiskFlag, deleteRiskFlag } from "../../services/risk/riskApi";
 import LogoutButton from "../../common/LogoutButton";
 
@@ -24,6 +24,7 @@ export default function RiskFlagsPage() {
   const [newStatus, setNewStatus] = useState("");
   const [updating, setUpdating] = useState(false);
   const [lastRefresh, setLastRefresh] = useState(new Date());
+  const [selectedFlagForDetails, setSelectedFlagForDetails] = useState(null);
 
   // Check access
   useEffect(() => {
@@ -111,6 +112,35 @@ export default function RiskFlagsPage() {
     if (s === "medium") return "bg-yellow-500/20 text-yellow-300 border-yellow-500/30";
     if (s === "low") return "bg-blue-500/20 text-blue-300 border-blue-500/30";
     return "bg-slate-500/20 text-slate-300 border-slate-500/30";
+  };
+
+  /**
+   * Format date for display
+   */
+  const formatDate = (date) => {
+    if (!date) return "—";
+    try {
+      const d = new Date(date);
+      return d.toLocaleString();
+    } catch {
+      return date;
+    }
+  };
+
+  /**
+   * Format percentage
+   */
+  const formatPercentage = (value) => {
+    if (!value && value !== 0) return "—";
+    return `${(value * 100).toFixed(2)}%`;
+  };
+
+  /**
+   * Format amount deviation
+   */
+  const formatDeviation = (value) => {
+    if (!value && value !== 0) return "—";
+    return `${value.toFixed(2)}x`;
   };
 
   /**
@@ -335,6 +365,13 @@ export default function RiskFlagsPage() {
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
                           <button
+                            onClick={() => setSelectedFlagForDetails(flag)}
+                            className="p-2 rounded bg-green-600/20 hover:bg-green-500/30 border border-green-500/30 text-green-400 hover:text-green-300 transition"
+                            title="View trigger details"
+                          >
+                            <Info size={16} />
+                          </button>
+                          <button
                             onClick={() => {
                               setEditingFlag(flag);
                               setNewStatus(status || "");
@@ -442,6 +479,159 @@ export default function RiskFlagsPage() {
                   {updating ? "Saving..." : "Save"}
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Trigger Details Modal */}
+      {selectedFlagForDetails && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-slate-800 border border-slate-700 rounded-xl shadow-2xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <Info size={24} className="text-green-400" />
+                <h3 className="text-xl font-bold text-white">Trigger Details</h3>
+              </div>
+              <button
+                onClick={() => setSelectedFlagForDetails(null)}
+                className="text-slate-400 hover:text-white transition"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="space-y-6">
+              {/* Flag Information */}
+              <div className="bg-slate-900/50 border border-slate-700/50 rounded-lg p-4">
+                <h4 className="text-sm font-semibold text-slate-300 mb-3 uppercase">Flag Information</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-xs text-slate-400 mb-1">Flag ID</p>
+                    <p className="font-mono text-sm font-semibold text-blue-300">
+                      #{selectedFlagForDetails.FlagID || selectedFlagForDetails.flagID || "—"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-400 mb-1">Transaction ID</p>
+                    <p className="font-mono text-sm font-semibold text-blue-300">
+                      #{selectedFlagForDetails.TransactionID || selectedFlagForDetails.transactionID || "—"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-400 mb-1">Risk Type</p>
+                    <p className="text-sm text-slate-200 capitalize">
+                      {selectedFlagForDetails.RiskType || selectedFlagForDetails.riskType || "—"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-400 mb-1">Created At</p>
+                    <p className="text-sm text-slate-200">
+                      {formatDate(selectedFlagForDetails.CreatedAt || selectedFlagForDetails.createdAt)}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* ML Detection Metrics */}
+              <div className="bg-slate-900/50 border border-slate-700/50 rounded-lg p-4">
+                <h4 className="text-sm font-semibold text-slate-300 mb-3 uppercase">Detection Metrics</h4>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between p-3 bg-slate-800/50 rounded border border-slate-600/30">
+                    <div>
+                      <p className="text-xs text-slate-400">24h Transactions</p>
+                      <p className="text-sm font-medium text-slate-200">Number of transactions in last 24 hours</p>
+                    </div>
+                    <p className="text-lg font-bold text-yellow-300">
+                      {selectedFlagForDetails.TxnCount_24H || selectedFlagForDetails.txnCount24H || "—"}
+                    </p>
+                  </div>
+
+                  <div className="flex items-center justify-between p-3 bg-slate-800/50 rounded border border-slate-600/30">
+                    <div>
+                      <p className="text-xs text-slate-400">30d Failure Rate</p>
+                      <p className="text-sm font-medium text-slate-200">Percentage of failed transactions in 30 days</p>
+                    </div>
+                    <p className="text-lg font-bold text-orange-300">
+                      {formatPercentage(selectedFlagForDetails.FailureRatio_30D || selectedFlagForDetails.failureRatio30D)}
+                    </p>
+                  </div>
+
+                  <div className="flex items-center justify-between p-3 bg-slate-800/50 rounded border border-slate-600/30">
+                    <div>
+                      <p className="text-xs text-slate-400">Amount Deviation</p>
+                      <p className="text-sm font-medium text-slate-200">Deviation from average transaction amount</p>
+                    </div>
+                    <p className="text-lg font-bold text-cyan-300">
+                      {formatDeviation(selectedFlagForDetails.AmountDeviationRatio || selectedFlagForDetails.amountDeviationRatio)}
+                    </p>
+                  </div>
+
+                  <div className="flex items-center justify-between p-3 bg-slate-800/50 rounded border border-slate-600/30">
+                    <div>
+                      <p className="text-xs text-slate-400">Current Amount</p>
+                      <p className="text-sm font-medium text-slate-200">Transaction amount for this flag</p>
+                    </div>
+                    <p className="text-lg font-bold text-green-300">
+                      {selectedFlagForDetails.CurrentAmount || selectedFlagForDetails.currentAmount 
+                        ? `₹${parseFloat(selectedFlagForDetails.CurrentAmount || selectedFlagForDetails.currentAmount).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`
+                        : "—"
+                      }
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Risk Assessment */}
+              <div className="bg-slate-900/50 border border-slate-700/50 rounded-lg p-4">
+                <h4 className="text-sm font-semibold text-slate-300 mb-3 uppercase">Risk Assessment</h4>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="p-3 bg-slate-800/50 rounded border border-slate-600/30">
+                    <p className="text-xs text-slate-400 mb-1">Severity</p>
+                    <p className={`text-sm font-semibold inline-block px-2 py-1 rounded ${getSeverityColor(selectedFlagForDetails.Severity || selectedFlagForDetails.severity)}`}>
+                      {(selectedFlagForDetails.Severity || selectedFlagForDetails.severity || "—").toUpperCase()}
+                    </p>
+                  </div>
+                  <div className="p-3 bg-slate-800/50 rounded border border-slate-600/30">
+                    <p className="text-xs text-slate-400 mb-1">Risk Score</p>
+                    <p className="text-sm font-semibold text-slate-200">
+                      {selectedFlagForDetails.RiskScore || selectedFlagForDetails.riskScore 
+                        ? `${(parseFloat(selectedFlagForDetails.RiskScore || selectedFlagForDetails.riskScore) * 100).toFixed(0)}%`
+                        : "—"
+                      }
+                    </p>
+                  </div>
+                  <div className="p-3 bg-slate-800/50 rounded border border-slate-600/30">
+                    <p className="text-xs text-slate-400 mb-1">Status</p>
+                    <p className="text-sm font-semibold text-slate-200">
+                      {selectedFlagForDetails.Status || selectedFlagForDetails.status || "—"}
+                    </p>
+                  </div>
+                  <div className="p-3 bg-slate-800/50 rounded border border-slate-600/30">
+                    <p className="text-xs text-slate-400 mb-1">Analyzed At</p>
+                    <p className="text-xs font-mono text-slate-300">
+                      {formatDate(selectedFlagForDetails.AnalyzedAt || selectedFlagForDetails.analyzedAt)}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Notes Section */}
+              {(selectedFlagForDetails.Notes || selectedFlagForDetails.notes || selectedFlagForDetails.Description || selectedFlagForDetails.description) && (
+                <div className="bg-slate-900/50 border border-slate-700/50 rounded-lg p-4">
+                  <h4 className="text-sm font-semibold text-slate-300 mb-3 uppercase">Notes</h4>
+                  <p className="text-sm text-slate-300">
+                    {selectedFlagForDetails.Notes || selectedFlagForDetails.notes || selectedFlagForDetails.Description || selectedFlagForDetails.description}
+                  </p>
+                </div>
+              )}
+
+              <button
+                onClick={() => setSelectedFlagForDetails(null)}
+                className="w-full px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition font-medium"
+              >
+                Close
+              </button>
             </div>
           </div>
         </div>

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { createRefundRequest } from "../../../services/refunds/refundRequestsApi";
 import { RotateCcw, Lock, Phone, Receipt } from "lucide-react";
 import { useRateLimit } from "../../../hooks/useRateLimit";
@@ -7,7 +7,8 @@ import { useFailureTracking } from "../../../hooks/useFailureTracking";
 import { LoadingSpinner, TransactionResult, RateLimitWarning } from "../TransactionResult";
 import { RiskFlagAlert } from "../RiskFlagAlert";
 import { logRiskEvent, checkRefundStatus } from "../../../services/risk/riskApi";
-import { addNotification } from "../../../stores/notificationsSlice";
+// import { addNotification } from "../../../stores/notificationsSlice";
+// import { notifyRefundRequested } from "../../../services/notifications/refundNotificationsApi";
 
 const digitsOnly = (v) => (v || "").replaceAll(/\D+/g, "");
 
@@ -17,6 +18,8 @@ const digitsOnly = (v) => (v || "").replaceAll(/\D+/g, "");
  */
 export default function RefundForm({ onCompleted }) {
   const dispatch = useDispatch();
+  const userId = useSelector((s) => s.auth?.user?.id);
+  const merchantId = useSelector((s) => s.auth?.user?.merchantId);
   const rateLimit = useRateLimit(5, 60000); // 5 transactions per minute
   const failureTracker = useFailureTracking();
 
@@ -121,13 +124,26 @@ export default function RefundForm({ onCompleted }) {
       // Record success and reset failure counter
       failureTracker.recordSuccess();
 
-      // Send notification to user
-      dispatch(addNotification({
-        title: "Refund Request Submitted ✓",
-        message: `Your refund request for transaction #${txnIdNum} has been submitted successfully`,
-        icon: "🔄",
-        timestamp: new Date().toISOString()
-      }));
+      // Send role-based notifications to user and merchant
+      try {
+        await notifyRefundRequested({
+          requestId: out?.id || "pending",
+          userId: userId,
+          merchantId: merchantId,
+          originalTransactionID: txnIdNum,
+          amount: out?.amount || "N/A",
+        });
+      } catch (notifErr) {
+        console.warn("[RefundForm] Failed to send notifications:", notifErr);
+      }
+
+      // Send local notification to user
+      // dispatch(addNotification({
+      //   title: "Request Submitted ✓",
+      //   message: `Your refund request for transaction #${txnIdNum} has been submitted`,
+      //   icon: "🔄",
+      //   timestamp: new Date().toISOString()
+      // }));
 
       // Show success result
       setResult({

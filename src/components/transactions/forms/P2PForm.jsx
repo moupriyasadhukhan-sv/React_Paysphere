@@ -2,13 +2,15 @@ import { useState, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { createP2P } from "../../../services/transactions/transactionsApi";
 import { Send, Lock, Wallet, Phone, DollarSign } from "lucide-react";
-import { addNotification } from "../../../stores/notificationsSlice";
+// import { addNotification, initializeNotifications } from "../../../stores/notificationsSlice";
 import { useRateLimit } from "../../../hooks/useRateLimit";
 import { useFailureTracking } from "../../../hooks/useFailureTracking";
 import { LoadingSpinner, TransactionResult, RateLimitWarning } from "../TransactionResult";
 import { RiskFlagAlert } from "../RiskFlagAlert";
 import { logRiskEvent } from "../../../services/risk/riskApi";
 import { walletService } from "../../../services/walletService";
+// import { notifyP2PReceivedByWallet } from "../../../services/notifications/paymentReceivedNotificationsApi";
+// import { pollReceiverNotifications } from "../../../services/notifications/notificationsApi";
 
 const digitsOnly = (v) => (v || "").replace(/\D+/g, "");
 
@@ -122,13 +124,41 @@ export default function P2PForm({ onCompleted }) {
         ],
       });
 
-      // Add notification
-      dispatch(addNotification({
-        title: "P2P Transfer Successful ✓",
-        message: `Sent ₹${amountNum} to wallet ${toWalletNum}`,
-        icon: "💸",
-        timestamp: new Date().toISOString()
-      }));
+      // Add notification for sender
+      // dispatch(addNotification({
+      //   title: "P2P Transfer Successful ✓",
+      //   message: `Sent ₹${amountNum} to wallet ${toWalletNum}`,
+      //   icon: "💸",
+      //   timestamp: new Date().toISOString()
+      // }));
+      
+      // Send notification to receiver that they received money
+      try {
+        console.log("[P2PForm] Sending P2P received notification. Sender Wallet:", resolvedWallet, "Receiver Wallet:", toWalletNum);
+        
+        await notifyP2PReceivedByWallet({
+          senderWalletId: resolvedWallet,
+          receiverWalletId: toWalletNum,
+          amount: amountNum,
+          transactionId: res?.transactionId || res?.id,
+        });
+        
+        console.log("[P2PForm] P2P received notification sent successfully");
+        
+        // Refresh receiver's P2P notifications after sending
+        try {
+          setTimeout(async () => {
+            const freshNotifs = await pollReceiverNotifications(10, "P2P");
+            if (freshNotifs?.data) {
+              console.log("[P2PForm] Refreshed receiver P2P notifications:", freshNotifs.data);
+            }
+          }, 500); // Small delay to ensure backend has processed
+        } catch (pollErr) {
+          console.warn("[P2PForm] Failed to refresh receiver notifications:", pollErr);
+        }
+      } catch (receivedErr) {
+        console.warn("[P2PForm] Failed to send P2P received notification:", receivedErr);
+      }
 
       // Reset failure tracking on success
       failureTracker.recordSuccess();

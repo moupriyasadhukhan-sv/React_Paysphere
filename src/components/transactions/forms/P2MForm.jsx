@@ -2,13 +2,15 @@ import { useState, useEffect } from "react";
 import { createP2M } from "../../../services/transactions/transactionsApi";
 import { useSelector, useDispatch } from "react-redux";
 import { ShoppingCart, Lock, Wallet, Phone, DollarSign } from "lucide-react";
-import { addNotification } from "../../../stores/notificationsSlice";
+// import { addNotification, initializeNotifications } from "../../../stores/notificationsSlice";
 import { useRateLimit } from "../../../hooks/useRateLimit";
 import { useFailureTracking } from "../../../hooks/useFailureTracking";
 import { LoadingSpinner, TransactionResult, RateLimitWarning } from "../TransactionResult";
 import { RiskFlagAlert } from "../RiskFlagAlert";
 import { logRiskEvent } from "../../../services/risk/riskApi";
 import { walletService } from "../../../services/walletService";
+// import { notifyP2MReceived } from "../../../services/notifications/paymentReceivedNotificationsApi";
+// import { pollReceiverNotifications } from "../../../services/notifications/notificationsApi";
 
 const digitsOnly = (v) => (v || "").replace(/\D+/g, "");
 
@@ -125,13 +127,56 @@ export default function P2MForm({ onCompleted }) {
         ],
       });
 
-      // Add notification
-      dispatch(addNotification({
-        title: "Merchant Payment Successful ✓",
-        message: `Paid ₹${amountNum} to merchant ${toWalletNum}`,
-        icon: "🛒",
-        timestamp: new Date().toISOString()
-      }));
+      // Add notification for payer
+      // dispatch(addNotification({
+      //   title: "Merchant Payment Successful ✓",
+      //   message: `Paid ₹${amountNum} to merchant ${toWalletNum}`,
+      //   icon: "🛒",
+      //   timestamp: new Date().toISOString()
+      // }));
+      
+      // Send notification to merchant that they received payment
+      try {
+        // Extract merchant ID from wallet ID
+        let merchantId = null;
+        try {
+          merchantId = await walletService.getUserIdFromWalletId(toWalletNum);
+          console.log("[P2MForm] Retrieved merchant ID from wallet:", merchantId);
+        } catch (walletErr) {
+          console.warn("[P2MForm] Could not fetch merchant ID from wallet ID:", walletErr.message);
+          // Fallback: try to extract from transaction response
+          merchantId = res?.toMerchantId || res?.merchantId || res?.receiverId;
+          console.log("[P2MForm] Using fallback merchant ID from response:", merchantId);
+        }
+        
+        if (!merchantId) {
+          console.warn("[P2MForm] ⚠️ Could not determine merchant ID");
+        } else {
+          console.log("[P2MForm] Sending P2M received notification to merchant:", merchantId);
+          await notifyP2MReceived({
+            userId: null,
+            merchantId: merchantId,
+            amount: amountNum,
+            transactionId: res?.transactionId || res?.id,
+            merchantName: "Merchant",
+          });
+          console.log("[P2MForm] P2M received notification sent successfully to merchant:", merchantId);
+          
+          // Refresh merchant's P2M notifications after sending
+          try {
+            setTimeout(async () => {
+              const freshNotifs = await pollReceiverNotifications(10, "P2M");
+              if (freshNotifs?.data) {
+                console.log("[P2MForm] Refreshed merchant P2M notifications:", freshNotifs.data);
+              }
+            }, 500); // Small delay to ensure backend has processed
+          } catch (pollErr) {
+            console.warn("[P2MForm] Failed to refresh merchant notifications:", pollErr);
+          }
+        }
+      } catch (receivedErr) {
+        console.warn("[P2MForm] Failed to send P2M received notification:", receivedErr);
+      }
 
       // Reset form after success
       setMsg(res?.message || "Merchant payment completed successfully!");
@@ -143,8 +188,6 @@ export default function P2MForm({ onCompleted }) {
 
       const d = e2?.response?.data;
       const status = e2?.response?.status;
-      
-      console.log("[P2MForm] Error Response - Status:", status, "Data:", d);
       
       // 1️⃣ Extract Transaction ID from response
       let transactionId = 

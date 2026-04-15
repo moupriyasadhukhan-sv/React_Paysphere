@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { AlertTriangle, X } from "lucide-react";
+import { RiskScoreBadge } from "../shared/RiskScoreBadge";
 
 /**
  * Risk Flag Alert Component
- * Displays when 3 consecutive transaction failures detected
- * Alert shown to users - risk details logged to staff dashboard
+ * Displays when transaction failures detected with ML-based risk scoring
+ * Updated for 0-100 percentage scale (>= 80 is critical)
  */
-export function RiskFlagAlert({ onClose, failureCount = 3 }) {
+export function RiskFlagAlert({ onClose, failureCount = 3, riskScore, triggerFeatures }) {
   const [isDismissed, setIsDismissed] = useState(false);
 
   if (isDismissed) return null;
@@ -15,6 +16,19 @@ export function RiskFlagAlert({ onClose, failureCount = 3 }) {
     setIsDismissed(true);
     onClose?.();
   };
+
+  const hasRiskData = riskScore !== undefined && riskScore !== null;
+
+  // Normalize risk score to 0-100 percentage
+  let normalizedScore = Number.parseFloat(riskScore);
+  if (Number.isNaN(normalizedScore)) {
+    normalizedScore = 0;
+  }
+  // Convert from 0-1 scale if needed
+  if (normalizedScore >= 0 && normalizedScore <= 1) {
+    normalizedScore = normalizedScore * 100;
+  }
+  const isCriticalRisk = normalizedScore >= 80;
 
   return (
     <div className="fixed top-4 right-4 z-[10000] animate-in slide-in-from-right duration-300 max-w-md">
@@ -41,10 +55,30 @@ export function RiskFlagAlert({ onClose, failureCount = 3 }) {
           <p className="text-red-100 text-sm mb-2 font-semibold">
             🔴 {failureCount} consecutive failed attempts detected
           </p>
+          {hasRiskData && (
+            <div className="mb-3 p-2 bg-slate-800/50 rounded border border-slate-600/30">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-xs text-slate-300">Risk Assessment:</span>
+                <RiskScoreBadge
+                  riskScore={riskScore}
+                  triggerFeatures={triggerFeatures}
+                  showDetails={false}
+                />
+              </div>
+              {isCriticalRisk && (
+                <p className="text-xs text-red-300 font-medium">
+                  ⚠️ High-risk transaction detected - additional verification required
+                </p>
+              )}
+            </div>
+          )}
           <ul className="text-red-200/70 text-xs space-y-1 ml-4">
             <li>• Your account has been flagged for suspicious activity</li>
             <li>• This has been recorded for review by our security team</li>
             <li>• Please verify your transaction details carefully</li>
+            {hasRiskData && isCriticalRisk && (
+              <li>• High-risk transactions may require additional approval</li>
+            )}
           </ul>
         </div>
 

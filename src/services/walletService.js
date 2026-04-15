@@ -53,5 +53,20 @@ export const walletService = {
       // Re-throw to let the component handle different status codes
       throw error;
     }
+  },
+
+   // Get user ID associated with a wallet ID
+  getUserIdFromWalletId: async (walletId) => {
+    try {
+      console.log('[walletService] Fetching user ID for wallet:', walletId);
+      const response = await api.get(`/Wallets/${walletId}`);
+      const userId = response.data?.userId || response.data?.UserId;
+      console.log('[walletService] Retrieved user ID:', userId, 'for wallet:', walletId);
+      return userId;
+    } catch (error) {
+      console.error('[walletService] Failed to get user ID from wallet:', error.message);
+      throw error;
+    }
   }
 };
+

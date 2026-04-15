@@ -1,7 +1,9 @@
 // src/components/transactions/TransactionDetailsPanel.jsx
 import { useEffect, useState } from "react";
 import { getTransactionById } from "../../services/transactions/transactionsApi";
+import { getRiskFlagsByTransactionId } from "../../services/risk/riskApi";
 import { X, Loader2, AlertCircle, CheckCircle, Clock, XCircle } from "lucide-react";
+import { TransactionRiskFlags } from "../shared/TransactionRiskFlags";
 
 const getStatusIcon = (status) => {
   if (!status) return <Clock size={16} className="text-slate-400" />;
@@ -14,6 +16,7 @@ const getStatusIcon = (status) => {
 
 export default function TransactionDetailsPanel({ id, onClose }) {
   const [data, setData] = useState(null);
+  const [riskFlags, setRiskFlags] = useState([]);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
 
@@ -23,9 +26,19 @@ export default function TransactionDetailsPanel({ id, onClose }) {
       setBusy(true);
       setErr("");
       setData(null);
+      setRiskFlags([]);
       try {
-        const res = await getTransactionById(id);
-        setData(res);
+        const transactionData = await getTransactionById(id);
+        setData(transactionData);
+
+        // Fetch risk flags for this transaction
+        try {
+          const flags = await getRiskFlagsByTransactionId(id);
+          setRiskFlags(Array.isArray(flags) ? flags : []);
+        } catch (riskError) {
+          console.warn("[TxnDetails] Could not fetch risk flags:", riskError);
+          // Don't set error for risk flags - they're optional
+        }
       } catch (e) {
         const msg =
           e?.response?.data?.detail ||
@@ -64,7 +77,7 @@ export default function TransactionDetailsPanel({ id, onClose }) {
       </div>
 
       {/* Content */}
-      <div className="p-6">
+      <div className="p-6 max-h-96 overflow-y-auto">
         {busy && (
           <div className="flex items-center justify-center py-8">
             <Loader2 size={24} className="text-teal-400 animate-spin" />
@@ -153,6 +166,9 @@ export default function TransactionDetailsPanel({ id, onClose }) {
           </div>
         )}
       </div>
+
+      {/* Risk Flags Section */}
+      <TransactionRiskFlags riskFlags={riskFlags} />
     </div>
   );
 }

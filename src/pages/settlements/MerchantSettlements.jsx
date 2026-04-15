@@ -279,7 +279,7 @@ export default function MerchantSettlements() {
                     <td className="px-4 py-3">{s.settledDate ?? "—"}</td>
 
                     <td className="px-4 py-3">
-                      <select
+                      {/* <select
                         className="bg-white/10 text-white border border-white/20 rounded-md px-2 py-1"
                         value={s.status ?? "Pending"}
                         onChange={(e) => {
@@ -302,7 +302,42 @@ export default function MerchantSettlements() {
                             {opt}
                           </option>
                         ))}
-                      </select>
+                      </select> */}
+
+                      <select
+  className="
+    bg-gray-800 text-teal-200 
+    border border-teal-400/40 
+    rounded-md px-2 py-1
+    focus:outline-none focus:ring-2 focus:ring-teal-400
+  "
+  value={s.status ?? "Pending"}
+  onChange={(e) => {
+    const newStatus = e.target.value;
+    openConfirm({
+      title: "Update Status",
+      message: (
+        <div>
+          Change status of <strong>Settlement {sid}</strong> to{" "}
+          <strong>{newStatus}</strong>?
+        </div>
+      ),
+      confirmText: "Update",
+      onConfirm: async () => await handleUpdateStatus(sid, newStatus),
+    });
+  }}
+>
+  {statusOptions.map((opt) => (
+    <option
+      key={opt}
+      value={opt}
+      className="bg-gray-900 text-teal-200"
+    >
+      {opt}
+    </option>
+  ))}
+</select>
+
                     </td>
 
                     <td className="px-4 py-3">

@@ -1,12 +1,15 @@
 import { useState } from "react";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { createRefundRequest } from "../../services/refunds/refundRequestsApi.js";
-import { addNotification } from "../../stores/notificationsSlice";
+// import { addNotification } from "../../stores/notificationsSlice";
+// import { notifyRefundRequested } from "../../services/notifications/refundNotificationsApi";
 
 const digitsOnly = (v) => (v || "").replace(/\D+/g, "");
 
 export default function UserRefundRequestForm({ onCompleted }) {
   const dispatch = useDispatch();
+  const userId = useSelector((s) => s.auth?.user?.id);
+  const merchantId = useSelector((s) => s.auth?.user?.merchantId);
   const [originalTransactionID, setOrig] = useState("");
   const [phone, setPhone] = useState("");
 
@@ -29,10 +32,23 @@ export default function UserRefundRequestForm({ onCompleted }) {
       });
       setMsg(out?.message || "Refund request submitted (Pending).");
       
-      // Add notification
+      // Send role-based notifications
+      try {
+        await notifyRefundRequested({
+          requestId: out?.id || "pending",
+          userId: userId,
+          merchantId: merchantId,
+          originalTransactionID: originalTransactionID,
+          amount: out?.amount || "N/A",
+        });
+      } catch (notifErr) {
+        console.warn("[UserRefundRequestForm] Failed to send notifications:", notifErr);
+      }
+      
+      // Add local notification to user
       dispatch(addNotification({
-        title: "Refund Request Submitted ✓",
-        message: `Refund request for transaction #${originalTransactionID} submitted successfully`,
+        title: "Request Submitted ✓",
+        message: `Your refund request submitted`,
         icon: "🔄",
         timestamp: new Date().toISOString()
       }));
