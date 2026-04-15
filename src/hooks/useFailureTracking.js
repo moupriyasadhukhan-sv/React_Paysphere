@@ -4,15 +4,20 @@ import { useState, useCallback, useEffect } from "react";
  * Hook to track consecutive failed transaction attempts
  * LOCKS the FIRST transaction ID for the entire failure sequence
  * Severity increases: LOW (3 failures), MEDIUM (4), HIGH (5+)
+ * At 5 consecutive INSUFFICIENT_FUNDS failures, triggers logout with "Session Expired"
  * Resets on successful transaction
  */
 export function useFailureTracking() {
   const [failureCount, setFailureCount] = useState(0);
   const [showRiskAlert, setShowRiskAlert] = useState(false);
   const [firstTransactionId, setFirstTransactionId] = useState(null);  // LOCK: Only the FIRST failed ID
+  const [insufficientFundsCount, setInsufficientFundsCount] = useState(0);  // Track insufficient funds specifically
+  const [shouldLogout, setShouldLogout] = useState(false);  // Trigger logout when 5 consecutive insufficient funds
   
   const FAILURE_THRESHOLD = 3;
+  const INSUFFICIENT_FUNDS_LOGOUT_THRESHOLD = 5;
   const STORAGE_KEY = "ps_tx_failures";
+  const INSUFFICIENT_FUNDS_KEY = "ps_insufficient_funds_count";
 
   // Calculate severity based on failure count
   const getSeverity = (count) => {

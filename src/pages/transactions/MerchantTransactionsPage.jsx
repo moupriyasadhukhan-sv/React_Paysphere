@@ -20,11 +20,11 @@ export default function MerchantTransactionsPage({ merchantId: propMerchantId } 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const isInitialMount = useRef(true);
-
+ 
   // Get merchant ID from props, context, or JWT token
   const getMerchantId = () => {
     if (propMerchantId) return propMerchantId;
-    
+   
     try {
       const token = authContext?.auth?.token || localStorage.getItem("ps_token");
       if (token) {
@@ -34,10 +34,10 @@ export default function MerchantTransactionsPage({ merchantId: propMerchantId } 
     } catch (err) {
       console.error("Error decoding token:", err);
     }
-    
+   
     return 1; // Default merchant ID
   };
-
+ 
   // Calculate statistics
   const stats = {
     total: transactions.length,
@@ -48,29 +48,29 @@ export default function MerchantTransactionsPage({ merchantId: propMerchantId } 
       })
       .reduce((sum, t) => sum + (t.amount || 0), 0),
   };
-
+ 
   // Fetch transactions on mount
   useEffect(() => {
     const fetchTransactions = async () => {
       setLoading(true);
       setError(null);
-      
+     
       // Only show toast if NOT initial mount (prevents duplicate toasts in StrictMode)
       const shouldShowToast = !isInitialMount.current;
       let loadingToastId = null;
-      
+     
       if (shouldShowToast) {
         loadingToastId = showMerchantLoading("Loading transactions...");
       }
-      
+     
       try {
         const mId = getMerchantId();
         console.log("Fetching transactions for merchant ID:", mId);
         const response = await getMerchantTransactions(mId);
-        
+       
         // Handle different response formats
         let transformedData = [];
-        
+       
         if (Array.isArray(response)) {
           transformedData = response;
         } else if (response?.data && Array.isArray(response.data)) {
@@ -83,12 +83,12 @@ export default function MerchantTransactionsPage({ merchantId: propMerchantId } 
           // Single object or unexpected format
           transformedData = response ? [response] : [];
         }
-        
+       
         // Map backend transaction fields to component expectations
         transformedData = transformedData.map((txn) => {
           // 1. Capture the real ID regardless of backend casing
           const realId = txn.transactionID || txn.transactionId || txn.TransactionId || txn.Id || txn.id || "ID_MISSING";
-          
+         
           return {
             id: realId,
             transactionId: realId,
@@ -96,16 +96,17 @@ export default function MerchantTransactionsPage({ merchantId: propMerchantId } 
             customerId: txn.senderId || txn.customerId || txn.SenderId || "N/A",
             amount: parseFloat(txn.amount || txn.Amount || 0),
             method: txn.paymentMethod || txn.method || txn.PaymentMethod || "N/A",
+            type: txn.transactionType || txn.type || txn.TransactionType || "Transfer",
             date: txn.transactionDate ? new Date(txn.transactionDate).toLocaleDateString() : (txn.date || "N/A"),
             time: txn.transactionDate ? new Date(txn.transactionDate).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : (txn.time || "N/A"),
             status: txn.status || txn.Status || "pending",
           };
         });
-        
+       
         console.log("Transformed transactions:", transformedData);
         setTransactions(transformedData);
         setFilteredTransactions(transformedData);
-        
+       
         // Dismiss loading toast and show success only if we showed loading
         if (shouldShowToast) {
           dismissMerchantToast(loadingToastId);
@@ -127,22 +128,22 @@ export default function MerchantTransactionsPage({ merchantId: propMerchantId } 
         isInitialMount.current = false;
       }
     };
-
+ 
     fetchTransactions();
   }, [propMerchantId]);
-
+ 
   // Update filtering whenever transactions, searchTerm, or statusFilter change
   useEffect(() => {
     filterTransactions();
   }, [searchTerm, statusFilter, transactions]);
-
+ 
   const filterTransactions = () => {
     let filtered = transactions;
-
+ 
     if (statusFilter !== "all") {
       filtered = filtered.filter((t) => t.status?.toLowerCase().trim() === statusFilter.toLowerCase().trim());
     }
-
+ 
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
       filtered = filtered.filter(
@@ -153,13 +154,13 @@ export default function MerchantTransactionsPage({ merchantId: propMerchantId } 
           (t.transactionId?.toLowerCase().includes(term))
       );
     }
-
+ 
     setFilteredTransactions(filtered);
   };
-
+ 
   const getStatusColor = (status) => {
     const normalizedStatus = status?.toLowerCase().trim() || "";
-    
+   
     // Check for success or completed
     if (normalizedStatus === "success" || normalizedStatus === "completed" || normalizedStatus === "approved") {
       return "text-emerald-400 bg-emerald-500/10 border border-emerald-500/20";
@@ -172,14 +173,14 @@ export default function MerchantTransactionsPage({ merchantId: propMerchantId } 
     if (normalizedStatus === "failed" || normalizedStatus === "declined" || normalizedStatus === "cancelled") {
       return "text-red-400 bg-red-500/10 border border-red-500/20";
     }
-    
+   
     // Default fallback
     return "text-slate-400 bg-slate-500/10 border border-slate-500/20";
   };
-
+ 
   const getStatusIcon = (status) => {
     const normalizedStatus = status?.toLowerCase().trim() || "";
-    
+   
     if (normalizedStatus === "success" || normalizedStatus === "completed" || normalizedStatus === "approved") {
       return "✓";
     }
@@ -189,14 +190,14 @@ export default function MerchantTransactionsPage({ merchantId: propMerchantId } 
     if (normalizedStatus === "failed" || normalizedStatus === "declined" || normalizedStatus === "cancelled") {
       return "✕";
     }
-    
+   
     return "•";
   };
-
+ 
   return (
     <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white min-h-screen p-6 md:p-8">
       {/* <Toaster position="top-right" toastOptions={{ style: { background: "transparent", boxShadow: "none", padding: 0 } }} /> */}
-
+ 
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-7xl mx-auto space-y-8">
         {/* Loading State */}
         {loading && (
@@ -207,7 +208,7 @@ export default function MerchantTransactionsPage({ merchantId: propMerchantId } 
             </div>
           </motion.div>
         )}
-
+ 
         {/* Error State */}
         {error && !loading && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-6 bg-red-900/20 border border-red-500/30 rounded-lg">
@@ -215,7 +216,7 @@ export default function MerchantTransactionsPage({ merchantId: propMerchantId } 
             <p className="text-red-300/70 text-sm mt-2">Failed to load merchant transactions. Please try again later.</p>
           </motion.div>
         )}
-
+ 
         {/* Content */}
         {!loading && (
         <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
@@ -227,7 +228,7 @@ export default function MerchantTransactionsPage({ merchantId: propMerchantId } 
           </div>
         </motion.div>
         )}
-
+ 
         {/* Statistics Cards */}
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 }} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
           <MotionStatCard
@@ -239,7 +240,7 @@ export default function MerchantTransactionsPage({ merchantId: propMerchantId } 
             color="emerald"
           />
         </motion.div>
-
+ 
         {/* Filters & Search */}
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }} className="space-y-4">
           <div className="flex gap-4 items-center flex-wrap">
@@ -254,7 +255,7 @@ export default function MerchantTransactionsPage({ merchantId: propMerchantId } 
                 className="w-full pl-10 pr-4 py-2.5 bg-slate-800/50 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-colors"
               />
             </div>
-
+ 
             {/* Status Filter */}
             <div className="flex gap-2">
               {["all"].map((status) => (
@@ -275,7 +276,7 @@ export default function MerchantTransactionsPage({ merchantId: propMerchantId } 
             </div>
           </div>
         </motion.div>
-
+ 
         {/* Transactions Table */}
         <MotionCard title={`Transactions (${filteredTransactions.length})`}>
           <div className="overflow-x-auto">
@@ -284,6 +285,7 @@ export default function MerchantTransactionsPage({ merchantId: propMerchantId } 
                 <tr className="border-b border-slate-700">
                   <th className="text-left py-3 px-4 font-semibold text-slate-300">Transaction ID</th>
                   <th className="text-left py-3 px-4 font-semibold text-slate-300">Amount</th>
+                  <th className="text-left py-3 px-4 font-semibold text-slate-300">Type</th>
                   <th className="text-left py-3 px-4 font-semibold text-slate-300">Date & Time</th>
                   <th className="text-left py-3 px-4 font-semibold text-slate-300">Status</th>
                 </tr>
@@ -304,6 +306,11 @@ export default function MerchantTransactionsPage({ merchantId: propMerchantId } 
                       <span className="font-semibold text-cyan-400">₹{txn.amount.toLocaleString()}</span>
                     </td>
                     <td className="py-3 px-4">
+                      <span className="inline-block px-2.5 py-1 rounded-md text-xs font-semibold bg-slate-700/50 text-slate-300 border border-slate-600/30">
+                        {txn.type}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4">
                       <div>
                         <p className="text-slate-300">{txn.date}</p>
                         <p className="text-xs text-slate-500">{txn.time}</p>
@@ -319,7 +326,7 @@ export default function MerchantTransactionsPage({ merchantId: propMerchantId } 
                 ))}
               </tbody>
             </table>
-
+ 
             {filteredTransactions.length === 0 && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-12">
                 <p className="text-slate-400">No transactions found</p>
@@ -331,3 +338,4 @@ export default function MerchantTransactionsPage({ merchantId: propMerchantId } 
     </div>
   );
 }
+ 

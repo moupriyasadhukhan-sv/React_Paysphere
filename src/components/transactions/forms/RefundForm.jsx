@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
 import { createRefundRequest } from "../../../services/refunds/refundRequestsApi";
 import { RotateCcw, Lock, Phone, Receipt } from "lucide-react";
 import { useRateLimit } from "../../../hooks/useRateLimit";
 import { useFailureTracking } from "../../../hooks/useFailureTracking";
+import useLogout from "../../../hooks/useLogout";
 import { LoadingSpinner, TransactionResult, RateLimitWarning } from "../TransactionResult";
 import { RiskFlagAlert } from "../RiskFlagAlert";
 import { logRiskEvent, checkRefundStatus } from "../../../services/risk/riskApi";
@@ -18,10 +20,12 @@ const digitsOnly = (v) => (v || "").replaceAll(/\D+/g, "");
  */
 export default function RefundForm({ onCompleted }) {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const userId = useSelector((s) => s.auth?.user?.id);
   const merchantId = useSelector((s) => s.auth?.user?.merchantId);
   const rateLimit = useRateLimit(5, 60000); // 5 transactions per minute
   const failureTracker = useFailureTracking();
+  const logout = useLogout("/login");
 
   const [originalTransactionID, setOrig] = useState("");
   const [phone, setPhone] = useState("");
@@ -164,8 +168,33 @@ export default function RefundForm({ onCompleted }) {
     } catch (error_) {
       setLoading(false);
 
-      // Record failure
-      failureTracker.recordFailure();
+      const d = error_?.response?.data;
+      const status = error_?.response?.status;
+      const isInsufficientFunds = status === 402;  // 402 = Insufficient Balance
+
+      // Record failure with insufficient funds flag if applicable
+      failureTracker.recordFailure(null, isInsufficientFunds);
+
+      // Check if 5 consecutive insufficient funds - trigger logout with "Session Expired"
+      if (failureTracker.shouldLogout) {
+        console.error("[RefundForm] 🚨 LOGOUT TRIGGERED: 5 consecutive insufficient funds failures!");
+        // Show session expired message
+        setResult({
+          type: "error",
+          title: "Session Expired",
+          message: "Too many failed transaction attempts. Please login again.",
+          details: [
+            "Reason: 5 consecutive insufficient funds transactions",
+            "For security, your session has been terminated",
+          ],
+        });
+        // Wait a moment for user to see the message, then logout
+        setTimeout(async () => {
+          await logout();
+        }, 2000);
+        return;
+      }
+
       if (failureTracker.isRiskThresholdReached) {
         console.log("[RefundForm] Threshold reached, creating risk flag...");
         logRiskEvent({
@@ -186,9 +215,6 @@ export default function RefundForm({ onCompleted }) {
           });
         });
       }
-
-      const d = error_?.response?.data;
-      const status = error_?.response?.status;
 
       let title = "Refund Request Failed";
       let message = "Unable to submit your refund request";

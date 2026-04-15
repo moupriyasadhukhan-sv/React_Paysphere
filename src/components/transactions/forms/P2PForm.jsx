@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
+import { useNavigate } from "react-router-dom";
 import { createP2P } from "../../../services/transactions/transactionsApi";
 import { Send, Lock, Wallet, Phone, DollarSign } from "lucide-react";
 // import { addNotification, initializeNotifications } from "../../../stores/notificationsSlice";
 import { useRateLimit } from "../../../hooks/useRateLimit";
 import { useFailureTracking } from "../../../hooks/useFailureTracking";
+import useLogout from "../../../hooks/useLogout";
 import { LoadingSpinner, TransactionResult, RateLimitWarning } from "../TransactionResult";
 import { RiskFlagAlert } from "../RiskFlagAlert";
 import { logRiskEvent } from "../../../services/risk/riskApi";
@@ -16,9 +18,11 @@ const digitsOnly = (v) => (v || "").replace(/\D+/g, "");
 
 export default function P2PForm({ onCompleted }) {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const resolvedWallet = useSelector((s) => s.auth?.walletId);
   const rateLimit = useRateLimit(5, 60000); // 5 transactions per minute
   const failureTracker = useFailureTracking();
+  const logout = useLogout("/login");
 
   const [toWalletID, setTo] = useState("");
   const [amount, setAmount] = useState("");
@@ -204,7 +208,8 @@ export default function P2PForm({ onCompleted }) {
 
       // Only record failure if we got the REAL transaction ID from backend
       if (transactionId) {
-        failureTracker.recordFailure(transactionId);
+        const isInsufficientFunds = status === 402;  // 402 = Insufficient Balance
+        failureTracker.recordFailure(transactionId, isInsufficientFunds);
       }
       
       // Build error message based on status
@@ -244,6 +249,26 @@ export default function P2PForm({ onCompleted }) {
         message,
         details,
       });
+
+      // Check if 5 consecutive insufficient funds - trigger logout with "Session Expired"
+      if (failureTracker.shouldLogout) {
+        console.error("[P2PForm] 🚨 LOGOUT TRIGGERED: 5 consecutive insufficient funds failures!");
+        // Show session expired message
+        setResult({
+          type: "error",
+          title: "Session Expired",
+          message: "Too many failed transaction attempts. Please login again.",
+          details: [
+            "Reason: 5 consecutive insufficient funds transactions",
+            "For security, your session has been terminated",
+          ],
+        });
+        // Wait a moment for user to see the message, then logout
+        setTimeout(async () => {
+          await logout();
+        }, 2000);
+        return;
+      }
       
       // Check if threshold just reached (failureCount + 1 === 3)
       // Use the FIRST transaction ID that was locked in the hook

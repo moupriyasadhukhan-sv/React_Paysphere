@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
 import { createP2M } from "../../../services/transactions/transactionsApi";
 import { useSelector, useDispatch } from "react-redux";
+import { useNavigate } from "react-router-dom";
 import { ShoppingCart, Lock, Wallet, Phone, DollarSign } from "lucide-react";
 // import { addNotification, initializeNotifications } from "../../../stores/notificationsSlice";
 import { useRateLimit } from "../../../hooks/useRateLimit";
 import { useFailureTracking } from "../../../hooks/useFailureTracking";
+import useLogout from "../../../hooks/useLogout";
 import { LoadingSpinner, TransactionResult, RateLimitWarning } from "../TransactionResult";
 import { RiskFlagAlert } from "../RiskFlagAlert";
 import { logRiskEvent } from "../../../services/risk/riskApi";
@@ -16,9 +18,11 @@ const digitsOnly = (v) => (v || "").replace(/\D+/g, "");
 
 export default function P2MForm({ onCompleted }) {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const resolvedWallet = useSelector((s) => s.auth?.walletId);
   const rateLimit = useRateLimit(5, 60000); // 5 transactions per minute
   const failureTracker = useFailureTracking();
+  const logout = useLogout("/login");
 
   const [toWalletID, setTo] = useState("");
   const [amount, setAmount] = useState("");
