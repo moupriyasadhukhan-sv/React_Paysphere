@@ -241,10 +241,10 @@ export default function SettingsPage({ onNavigate }) {
               onClick={handleChangePasswordClick}
               // REMOVE THE 'disabled' LINE BELOW
             />
-            <ActionRow icon={Bell}  color="#10b981"
+            {/* <ActionRow icon={Bell}  color="#10b981"
               label={hi ? 'सूचनाएं' : te ? 'నోటిఫికేషన్లు' : 'Notifications'}
               sub={hi ? 'अलर्ट प्रबंधित करें' : te ? 'అలర్ట్‌లు నిర్వహించండి' : 'Manage alerts & push notifications'}
-              disabled />
+              disabled /> */}
           </div>
         </section>
 

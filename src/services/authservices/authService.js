@@ -11,7 +11,7 @@ export const registerUser = (data) => http.post("/api/auth/register", data);
 export const loginUser = (data) =>
   http.post("/api/auth/login", data, { withCredentials: true });
 export const logoutUser = () =>
-  http.post("/api/uth/logout", {}, { withCredentials: true });
+  http.post("/api/auth/logout", {}, { withCredentials: true });
 // import axios from "axios";
 
 // let AUTH_TOKEN = null;
