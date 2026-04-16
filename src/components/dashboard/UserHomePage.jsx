@@ -83,14 +83,84 @@ const fetchLimits = async () => {
 
 
 
+// const fetchTransactionCount = async () => {
+//   try {
+//     console.log("[UserHomePage] Fetching dashboard data...");
+//     const dashboardData = await getUserDashboard();
+//     console.log("[UserHomePage] Full dashboard response:", dashboardData);
+
+//     // Extract transaction count from dashboard data
+//     // Look for various possible field names
+//     const count = dashboardData?.totalTransactions ||
+//                   dashboardData?.transactionCount ||
+//                   dashboardData?.transactions?.length ||
+//                   dashboardData?.data?.totalTransactions ||
+//                   dashboardData?.data?.transactionCount ||
+//                   dashboardData?.data?.transactions?.length ||
+//                   0;
+
+//     console.log("[UserHomePage] Extracted transaction count:", count);
+
+//     // TEMPORARY: If count is 0, set a test value to verify UI works
+//     if (count === 0) {
+//       console.log("[UserHomePage] Setting temporary test count of 5");
+//       setTransactionCount(5); // Temporary test value
+//     } else {
+//       setTransactionCount(count);
+//     }
+//   } catch (e) {
+//     console.error("[UserHomePage] Dashboard fetch failed:", e);
+
+//     // Fallback: try user transaction history API
+//     try {
+//       console.log("[UserHomePage] Trying fallback transaction history API...");
+//       const token = getAuthToken() || localStorage.getItem("ps_token");
+//       if (!token) {
+//         console.log("[UserHomePage] No token available");
+//         // TEMPORARY: Set test value even without token
+//         console.log("[UserHomePage] Setting temporary test count of 3 (no token)");
+//         setTransactionCount(3); // Temporary test value
+//         return;
+//       }
+
+//       const decoded = jwtDecode(token);
+//       const userId = localStorage.getItem("ps_userId") || decoded?.uid || decoded?.userId || decoded?.sub;
+//       console.log("[UserHomePage] Using userId:", userId);
+
+//       // Use the proper transactions API
+//       const transactionData = await getUserHistory(userId, { page: 1, pageSize: 1 });
+//       console.log("[UserHomePage] Transaction history response:", transactionData);
+
+//       // Check if response has total count or items array
+//       const count = transactionData?.total ||
+//                     transactionData?.totalCount ||
+//                     transactionData?.items?.length ||
+//                     (Array.isArray(transactionData) ? transactionData.length : 0);
+
+//       console.log("[UserHomePage] Fallback transaction count:", count);
+
+//       // TEMPORARY: If count is 0, set a test value
+//       if (count === 0) {
+//         console.log("[UserHomePage] Setting temporary test count of 7");
+//         setTransactionCount(7); // Temporary test value
+//       } else {
+//         setTransactionCount(count);
+//       }
+//     } catch (fallbackError) {
+//       console.error("[UserHomePage] Fallback also failed:", fallbackError);
+//       // TEMPORARY: Set test value on error
+//       console.log("[UserHomePage] Setting temporary test count of 2 (error)");
+//       setTransactionCount(2); // Temporary test value
+//     }
+//   }
+// };
+ 
 const fetchTransactionCount = async () => {
   try {
     console.log("[UserHomePage] Fetching dashboard data...");
     const dashboardData = await getUserDashboard();
-    console.log("[UserHomePage] Full dashboard response:", dashboardData);
 
-    // Extract transaction count from dashboard data
-    // Look for various possible field names
+    // Extract real transaction count using optional chaining
     const count = dashboardData?.totalTransactions ||
                   dashboardData?.transactionCount ||
                   dashboardData?.transactions?.length ||
@@ -100,61 +170,41 @@ const fetchTransactionCount = async () => {
                   0;
 
     console.log("[UserHomePage] Extracted transaction count:", count);
+    setTransactionCount(count);
 
-    // TEMPORARY: If count is 0, set a test value to verify UI works
-    if (count === 0) {
-      console.log("[UserHomePage] Setting temporary test count of 5");
-      setTransactionCount(5); // Temporary test value
-    } else {
-      setTransactionCount(count);
-    }
   } catch (e) {
-    console.error("[UserHomePage] Dashboard fetch failed:", e);
+    console.error("[UserHomePage] Dashboard fetch failed, attempting fallback...", e);
 
-    // Fallback: try user transaction history API
     try {
-      console.log("[UserHomePage] Trying fallback transaction history API...");
       const token = getAuthToken() || localStorage.getItem("ps_token");
       if (!token) {
-        console.log("[UserHomePage] No token available");
-        // TEMPORARY: Set test value even without token
-        console.log("[UserHomePage] Setting temporary test count of 3 (no token)");
-        setTransactionCount(3); // Temporary test value
+        setTransactionCount(0);
         return;
       }
 
       const decoded = jwtDecode(token);
       const userId = localStorage.getItem("ps_userId") || decoded?.uid || decoded?.userId || decoded?.sub;
-      console.log("[UserHomePage] Using userId:", userId);
 
-      // Use the proper transactions API
       const transactionData = await getUserHistory(userId, { page: 1, pageSize: 1 });
-      console.log("[UserHomePage] Transaction history response:", transactionData);
 
-      // Check if response has total count or items array
-      const count = transactionData?.total ||
-                    transactionData?.totalCount ||
-                    transactionData?.items?.length ||
-                    (Array.isArray(transactionData) ? transactionData.length : 0);
+      // Check real response data
+      const fallbackCount = transactionData?.total ||
+                            transactionData?.totalCount ||
+                            transactionData?.items?.length ||
+                            (Array.isArray(transactionData) ? transactionData.length : 0);
 
-      console.log("[UserHomePage] Fallback transaction count:", count);
+      console.log("[UserHomePage] Fallback transaction count:", fallbackCount);
+      setTransactionCount(fallbackCount);
 
-      // TEMPORARY: If count is 0, set a test value
-      if (count === 0) {
-        console.log("[UserHomePage] Setting temporary test count of 7");
-        setTransactionCount(7); // Temporary test value
-      } else {
-        setTransactionCount(count);
-      }
     } catch (fallbackError) {
-      console.error("[UserHomePage] Fallback also failed:", fallbackError);
-      // TEMPORARY: Set test value on error
-      console.log("[UserHomePage] Setting temporary test count of 2 (error)");
-      setTransactionCount(2); // Temporary test value
+      console.error("[UserHomePage] All attempts failed:", fallbackError);
+      setTransactionCount(0); // Default to 0 if no real data is available
     }
   }
 };
- 
+
+
+
   // ---------- FETCH ACCOUNT STATUS (WALLET API) ----------
   const fetchAccountStatus = async () => {
   try {
